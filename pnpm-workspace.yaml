@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 12 blocks dependency build scripts by default. esbuild ships prebuilt binaries
+# (optional dependencies), so its postinstall is not needed; deny it explicitly.
+allowBuilds:
+  esbuild: false

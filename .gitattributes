@@ -1,0 +1,13 @@
+# Always LF in the repository and in working copies, so Windows and Linux agree.
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary

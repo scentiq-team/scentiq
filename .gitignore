@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets: only the *.example files are committed
+.env
+.env.*
+!.env.example
+
+# Test and tool output
+playwright-report/
+test-results/
+.lighthouseci/
+.vite/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.log
