@@ -18,7 +18,10 @@ export function ErrorState({ error, onRetry, className }: ErrorStateProps) {
   const requestId = isApiError(error) ? error.requestId : undefined;
 
   return (
-    <Card role="alert" className={cx('flex flex-col items-center gap-3 py-8 text-center', className)}>
+    <Card
+      role="alert"
+      className={cx('flex flex-col items-center gap-3 py-8 text-center', className)}
+    >
       <h2 className="text-2xl font-semibold text-ink">{t.errorState.title}</h2>
       <p className="m-0 max-w-prose text-muted">{t.errors[code]}</p>
       {requestId ? (

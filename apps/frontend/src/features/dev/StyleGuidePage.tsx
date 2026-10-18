@@ -137,7 +137,8 @@ const COPY: Record<Locale, Copy> = {
     displayAr: 'Arabic display face',
     displayLatin: 'Latin display face',
     body: 'Body face',
-    bodySample: 'A carefully chosen collection of luxury fragrances, and a recommendation that understands your taste.',
+    bodySample:
+      'A carefully chosen collection of luxury fragrances, and a recommendation that understands your taste.',
     mixedSample: (
       <>
         <bdi>Dior Sauvage</bdi> in <bdi>100 ml</bdi>
@@ -178,7 +179,10 @@ function useTokenValues(): Record<string, string> {
     const style = getComputedStyle(document.documentElement);
     setValues(
       Object.fromEntries(
-        SWATCHES.map(({ variable }) => [variable, style.getPropertyValue(variable).trim().toUpperCase()]),
+        SWATCHES.map(({ variable }) => [
+          variable,
+          style.getPropertyValue(variable).trim().toUpperCase(),
+        ]),
       ),
     );
   }, []);
@@ -319,7 +323,11 @@ function StyleGuideContent({ locale }: { locale: Locale }) {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <p className="m-0 text-sm text-muted">El Messiri 700 · {copy.displayAr}</p>
-              <p className="m-0 mt-2 font-display text-5xl font-bold leading-tight text-ink" lang="ar" dir="rtl">
+              <p
+                className="m-0 mt-2 font-display text-5xl font-bold leading-tight text-ink"
+                lang="ar"
+                dir="rtl"
+              >
                 عطور فاخرة
               </p>
               <p className="m-0 mt-2 font-display text-2xl text-ink" lang="ar" dir="rtl">
@@ -328,7 +336,11 @@ function StyleGuideContent({ locale }: { locale: Locale }) {
             </Card>
             <Card>
               <p className="m-0 text-sm text-muted">Cormorant Garamond 600 · {copy.displayLatin}</p>
-              <p className="m-0 mt-2 font-display text-5xl font-semibold leading-tight text-ink" lang="en" dir="ltr">
+              <p
+                className="m-0 mt-2 font-display text-5xl font-semibold leading-tight text-ink"
+                lang="en"
+                dir="ltr"
+              >
                 ScentIQ
               </p>
               <p className="m-0 mt-2 font-display text-2xl text-ink" lang="en" dir="ltr">
@@ -337,7 +349,9 @@ function StyleGuideContent({ locale }: { locale: Locale }) {
             </Card>
           </div>
           <Card className="flex flex-col gap-3">
-            <p className="m-0 text-sm text-muted">IBM Plex Sans Arabic 400 / 500 / 600 · {copy.body}</p>
+            <p className="m-0 text-sm text-muted">
+              IBM Plex Sans Arabic 400 / 500 / 600 · {copy.body}
+            </p>
             <p className="m-0 text-lg">{copy.bodySample}</p>
             <p className="m-0 text-lg font-medium">{copy.mixedSample}</p>
             <p className="m-0 text-lg font-semibold">

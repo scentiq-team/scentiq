@@ -75,13 +75,19 @@
     color: var(--c-on-accent);
   }
 
+  /* Reduced motion must beat every component's own animation and transition, which is the one
+     legitimate use of !important. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
       animation-duration: 0.001ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
       animation-iteration-count: 1 !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
       transition-duration: 0.001ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
       scroll-behavior: auto !important;
     }
   }
@@ -107,8 +113,7 @@
   /* Soft warm glow behind the hero; decorative only. */
   .hero-glow {
     background:
-      radial-gradient(60% 80% at 50% 0%, rgb(201 164 92 / 0.14), transparent 70%),
-      var(--c-surface);
+      radial-gradient(60% 80% at 50% 0%, rgb(201 164 92 / 0.14), transparent 70%), var(--c-surface);
   }
 
   @keyframes shimmer {

@@ -10,6 +10,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    css: false,
+    // CSS is not processed in tests, except tokens.css, which tokens.test.ts reads as text
+    // to verify the contrast of every colour pair.
+    css: { include: [/tokens\.css/] },
   },
 });
