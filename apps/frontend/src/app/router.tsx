@@ -24,12 +24,16 @@ function devStandaloneRoutes(): RouteObject[] {
   ];
 }
 
-/** The sample product route that lets the SEO shell spike hand over to React (same rule as above). */
+/**
+ * The sample product route that lets the SEO shell spike hand over to React (same rule as above).
+ * It matches only the one slug the server knows ("test"); any other /p/... answers 404 on the
+ * server, so the browser must show the not-found page for it too.
+ */
 function devStorefrontRoutes(): RouteObject[] {
   if (!__DEV_PAGES__) return [];
   return [
     {
-      path: 'p/:slug',
+      path: 'p/test',
       lazy: async () => ({
         Component: (await import('@/features/storefront/pages/ProductPlaceholderPage'))
           .ProductPlaceholderPage,

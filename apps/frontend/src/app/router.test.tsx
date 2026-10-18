@@ -131,6 +131,13 @@ describe('developer pages (present in test builds only)', () => {
     expect(document.querySelector('[data-dev-page="product-placeholder"]')).not.toBeNull();
   });
 
+  it('shows the not-found page for any other product path, like the server does', async () => {
+    renderRoute('/p/unknown');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'الصفحة غير موجودة' }),
+    ).toBeInTheDocument();
+  });
+
   it('serves the English sample product under /en', async () => {
     renderRoute('/en/p/test');
     expect(

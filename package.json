@@ -16,7 +16,7 @@
     "lint": "biome check . && node scripts/check-boundaries.mjs",
     "format": "biome format --write .",
     "test": "pnpm -r test",
-    "test:e2e": "pnpm --filter @scentiq/frontend test:e2e",
+    "test:e2e": "pnpm --filter @scentiq/shared build && pnpm --filter @scentiq/backend build && pnpm --filter @scentiq/frontend test:e2e",
     "clean": "node scripts/clean.mjs",
     "check:bundle": "node scripts/check-production-bundle.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:bundle"

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import indexCss from './index.css?raw';
 import tokensCss from './tokens.css?raw';
 
 /** Reads `--c-name: #rrggbb;` pairs from the :root block of tokens.css. */
@@ -102,5 +103,29 @@ describe('design tokens (direction A)', () => {
     expect(contrast(color('border'), color('bg'))).toBeLessThan(
       contrast(color('control-border'), color('bg')),
     );
+  });
+});
+
+describe('text on the hero glow', () => {
+  // axe cannot judge text that sits on a gradient (it reports it as "incomplete"), so the
+  // brightest point of the glow is checked here instead.
+  const glow = indexCss.match(/\.hero-glow\s*\{[^}]*?rgb\((\d+) (\d+) (\d+) \/ ([0-9.]+)\)/);
+
+  it('is found in index.css', () => {
+    expect(glow).not.toBeNull();
+  });
+
+  it('keeps text, muted text and the accent at 4.5:1 on its brightest point', () => {
+    const [, r, g, b, alpha] = glow as RegExpMatchArray;
+    const base = color('surface');
+    const mix = [1, 3, 5].map((start, index) => {
+      const channel = Number.parseInt(base.slice(start, start + 2), 16);
+      const glowChannel = Number([r, g, b][index]);
+      return Math.round(channel * (1 - Number(alpha)) + glowChannel * Number(alpha));
+    });
+    const brightest = `#${mix.map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+    for (const name of ['text', 'muted', 'accent']) {
+      expect(contrast(color(name), brightest), `${name} on the glow`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
