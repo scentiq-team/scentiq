@@ -10,6 +10,7 @@ import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { Input } from './Input';
 import { Logo } from './Logo';
+import { LogoMark } from './LogoMark';
 import { Skeleton } from './Skeleton';
 
 function inLocale(locale: 'ar' | 'en', ui: React.ReactNode) {
@@ -158,6 +159,28 @@ describe('Logo', () => {
     render(<Logo />);
     expect(screen.getByText('Scent').closest('[dir]')).toHaveAttribute('dir', 'ltr');
     expect(screen.getByText('IQ')).toBeInTheDocument();
+  });
+});
+
+describe('LogoMark', () => {
+  it('is decorative by default (hidden from assistive technology)', () => {
+    const { container } = render(<LogoMark />);
+    const svg = container.querySelector('svg');
+    expect(svg).toHaveAttribute('aria-hidden', 'true');
+    expect(svg).not.toHaveAttribute('role');
+  });
+
+  it('is announced as an image when it has a title', () => {
+    render(<LogoMark title="ScentIQ" />);
+    expect(screen.getByRole('img', { name: 'ScentIQ' })).toBeInTheDocument();
+  });
+
+  it('draws the S and the IQ from real outlines, with no inline styles (CSP)', () => {
+    const { container } = render(<LogoMark />);
+    const paths = container.querySelectorAll('path');
+    expect(paths).toHaveLength(2);
+    for (const path of paths) expect(path.getAttribute('d')?.length).toBeGreaterThan(100);
+    expect(container.querySelector('[style]')).toBeNull();
   });
 });
 

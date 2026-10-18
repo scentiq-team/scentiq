@@ -23,6 +23,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { ErrorState } from '@/ui/ErrorState';
 import { Input } from '@/ui/Input';
 import { Logo } from '@/ui/Logo';
+import { LogoMark } from '@/ui/LogoMark';
 import { Skeleton } from '@/ui/Skeleton';
 
 interface Copy {
@@ -249,7 +250,7 @@ function StyleGuideContent({ locale }: { locale: Locale }) {
   };
 
   return (
-    <main id="main" className="min-h-dvh pb-20">
+    <main id="main" data-dev-page="style-guide" className="min-h-dvh pb-20">
       <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
         <Container className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
@@ -284,6 +285,7 @@ function StyleGuideContent({ locale }: { locale: Locale }) {
       <Container className="flex flex-col gap-14 pt-10">
         <section className="hero-glow flex flex-col items-center gap-5 rounded-card border border-line px-4 py-14 text-center">
           <p className="m-0 text-sm font-medium text-accent">{brand.tagline}</p>
+          <LogoMark title={BRAND_NAME} className="size-24" />
           <Logo className="text-5xl sm:text-7xl" />
           <p className="m-0 font-display text-3xl font-semibold text-ink">{brand.headline}</p>
           <p className="m-0 max-w-prose text-muted">{brand.description}</p>

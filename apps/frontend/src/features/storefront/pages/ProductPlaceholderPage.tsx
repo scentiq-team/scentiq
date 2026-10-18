@@ -26,7 +26,7 @@ export function ProductPlaceholderPage() {
   useDocumentTitle(`${copy.title} | ${BRAND_NAME}`);
 
   return (
-    <Container className="py-16">
+    <Container data-dev-page="product-placeholder" className="py-16">
       <EmptyState
         headingLevel={1}
         title={copy.title}

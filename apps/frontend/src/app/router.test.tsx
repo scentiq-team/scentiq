@@ -127,6 +127,8 @@ describe('developer pages (present in test builds only)', () => {
       await screen.findByRole('heading', { level: 1, name: 'صفحة منتج تجريبية' }),
     ).toBeInTheDocument();
     expect(screen.getByText('/p/test')).toBeInTheDocument();
+    // The production-bundle check looks for this marker, so it must really be on the page.
+    expect(document.querySelector('[data-dev-page="product-placeholder"]')).not.toBeNull();
   });
 
   it('serves the English sample product under /en', async () => {
@@ -138,7 +140,9 @@ describe('developer pages (present in test builds only)', () => {
 
   it('serves the style guide', async () => {
     renderRoute('/dev/style-guide');
-    await waitFor(() => expect(document.querySelector('h1')).not.toBeNull());
+    await waitFor(() =>
+      expect(document.querySelector('[data-dev-page="style-guide"]')).not.toBeNull(),
+    );
   });
 });
 
