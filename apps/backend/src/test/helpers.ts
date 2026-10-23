@@ -4,7 +4,10 @@ import { buildApp } from '../app.js';
 import { type AppConfig, loadEnv } from '../config/env.js';
 import type { ProductSource } from '../modules/seo/types.js';
 
-export const fixtureDist = fileURLToPath(new URL('./fixtures/dist', import.meta.url));
+// A tiny stand-in for the built frontend. It must not be called "dist": the root .gitignore
+// ignores every folder with that name, so the fixture would exist on this disk but never reach
+// Git, and the tests would fail on a clean checkout (which is how CI caught it).
+export const fixtureDist = fileURLToPath(new URL('./fixtures/frontend-build', import.meta.url));
 
 /** A validated config pointing at the fixture frontend; pass env overrides per test. */
 export function testConfig(env: Record<string, string> = {}): AppConfig {
