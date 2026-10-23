@@ -57,6 +57,8 @@ Checked on 2026-10-19: `pnpm audit` reports no known vulnerabilities.
 
 Bundle budget: initial JavaScript for storefront routes about 150 KB gzip (ADR-0013). At the end of
 Phase 1 it is about 136.5 KB, so there is roughly 13 KB of headroom for the next phases.
+`@tanstack/react-query` and `zod` are in that number although the home page does not use them yet
+(the style guide does, and Phase 3 will); revisit if the headroom is needed before then.
 
 ## Planned, not installed
 

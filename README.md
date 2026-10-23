@@ -5,7 +5,7 @@
 A luxury perfume store: Arabic-first, RTL, mobile-first, Iraq-first. Single vendor, Cash on Delivery,
 guest checkout, IQD. The admin area is called **Perfume Studio**.
 
-**Status:** Phase 1 (Foundation) is being finished. There is no catalog, cart or checkout yet.
+**Status:** Phase 1 (Foundation) is finished and waiting for review. There is no catalog, cart or checkout yet.
 The phase plan is in [docs/adr/0017-phase-plan-scope-agreement.md](docs/adr/0017-phase-plan-scope-agreement.md).
 
 ## Layout

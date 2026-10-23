@@ -24,6 +24,7 @@ Minimum cost, always-on, and compatible with the single-origin SEO shell (ADR-00
 
 ## Consequences
 - Lowest running cost and no cold starts. The owner is responsible for OS patches, backups and monitoring, supported by runbooks.
+- **Compression is the reverse proxy's job.** The Node server sends files uncompressed. Caddy (or Cloudflare) must compress text responses (`encode zstd gzip` in Caddy). Measured at the end of Phase 1 with Lighthouse mobile: the main script is 430 KB raw and 133 KB gzip; performance scored 78 without compression and 94 to 97 (three runs) with gzip. The Phase 13 deployment runbook must include this and a check that `content-encoding` is present.
 
 ## Revisit when
 Operations burden becomes a problem, or one VPS is no longer enough.
