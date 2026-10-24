@@ -9,7 +9,10 @@ version we pinned an older, mature one instead of adding an exclusion: `@fastify
 `13.1.1` and `jsdom` to `30.1.2`. Raise them when the newer versions have aged. The `esbuild`
 build script is denied in `pnpm-workspace.yaml` because it ships prebuilt binaries.
 
-Checked on 2026-10-19: `pnpm audit` reports no known vulnerabilities.
+Checked on 2026-10-24: `pnpm audit` reports no known vulnerabilities. It had reported 11 after new
+advisories appeared (undici through jsdom, fast-uri through fastify); the lockfile now resolves the
+patched `undici` 8.12.3, `fast-uri` 3.1.9 and `fast-uri` 4.2.3 with no override. CI runs
+`pnpm audit --audit-level high` on every push, so a new high advisory shows up as a red check.
 
 ## Root (tooling only, nothing ships to users)
 
