@@ -29,3 +29,31 @@ export const problemDetailsSchema = z.object({
 });
 
 export type ProblemDetails = z.infer<typeof problemDetailsSchema>;
+
+/**
+ * Maps an HTTP status to the stable error code. The backend uses it to build problem documents
+ * and the frontend uses it for responses that are not problem+json (for example a 502 page from
+ * a reverse proxy), so both sides always agree.
+ */
+export function codeForStatus(status: number): ErrorCode {
+  switch (status) {
+    case 400:
+      return 'bad_request';
+    case 401:
+      return 'unauthorized';
+    case 403:
+      return 'forbidden';
+    case 404:
+      return 'not_found';
+    case 409:
+      return 'conflict';
+    case 429:
+      return 'rate_limited';
+    case 502:
+    case 503:
+    case 504:
+      return 'service_unavailable';
+    default:
+      return status >= 500 ? 'internal_error' : 'bad_request';
+  }
+}

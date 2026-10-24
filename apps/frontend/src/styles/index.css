@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Tailwind utilities read the design tokens (tokens.css), so the palette lives in one place. */
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-border);
+  --color-control: var(--c-control-border);
+  --color-ink: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-accent: var(--c-accent);
+  --color-on-accent: var(--c-on-accent);
+  --color-signal: var(--c-signal);
+  --color-focus: var(--c-focus);
+  --color-danger: var(--c-danger);
+  --color-success: var(--c-success);
+  --font-display: var(--font-display-stack);
+  --font-sans: var(--font-body-stack);
+  --radius-control: var(--r-control);
+  --radius-card: var(--r-card);
+}
+
+/* Latin display text (the wordmark) is the only place letter spacing is allowed; it would break
+   Arabic joining. Defined as a utility so it beats the Arabic reset in the base layer below. */
+@utility tracking-brand {
+  letter-spacing: 0.04em;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-body-stack);
+    /* Arabic needs more line height than Latin to keep diacritics from colliding. */
+    line-height: 1.75;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Letter spacing breaks Arabic joining. Latin display text opts in with .tracking-brand. */
+  html[lang='ar'] * {
+    letter-spacing: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display-stack);
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  /* Numbers inside Arabic text must keep their order (ADR-0016). */
+  .ltr-run {
+    unicode-bidi: isolate;
+    direction: ltr;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+  }
+
+  /* Reduced motion must beat every component's own animation and transition, which is the one
+     legitimate use of !important. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
+      animation-duration: 0.001ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
+      animation-iteration-count: 1 !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
+      transition-duration: 0.001ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides everything */
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    inset-inline-start: 0.75rem;
+    top: -4rem;
+    z-index: 100;
+    padding: 0.625rem 1rem;
+    border-radius: var(--r-control);
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    font-weight: 600;
+    transition: top var(--duration-fast) var(--ease-out);
+  }
+  .skip-link:focus {
+    top: 0.75rem;
+  }
+
+  /* Soft warm glow behind the hero; decorative only. */
+  .hero-glow {
+    background:
+      radial-gradient(60% 80% at 50% 0%, rgb(201 164 92 / 0.14), transparent 70%), var(--c-surface);
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+  .skeleton {
+    background: linear-gradient(
+      100deg,
+      var(--c-surface-2) 30%,
+      var(--c-border) 50%,
+      var(--c-surface-2) 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+}

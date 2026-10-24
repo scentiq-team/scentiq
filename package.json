@@ -15,10 +15,11 @@
     "typecheck": "tsc -b && pnpm -r typecheck:tests",
     "lint": "biome check . && node scripts/check-boundaries.mjs",
     "format": "biome format --write .",
-    "test": "pnpm -r test",
-    "test:e2e": "pnpm --filter @scentiq/frontend test:e2e",
+    "test": "pnpm --filter @scentiq/shared build && pnpm -r test",
+    "test:e2e": "pnpm --filter @scentiq/shared build && pnpm --filter @scentiq/backend build && pnpm --filter @scentiq/frontend test:e2e",
     "clean": "node scripts/clean.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check:bundle": "node scripts/check-production-bundle.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:bundle"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
