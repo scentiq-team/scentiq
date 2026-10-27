@@ -37,4 +37,38 @@ describe('health routes', () => {
     expect(response.json()).not.toHaveProperty('env');
     await app.close();
   });
+
+  describe('readiness with a database', () => {
+    it('lists the database check when it passes', async () => {
+      const app = await makeApp({}, undefined, { ping: async () => true });
+      const response = await app.inject({ method: 'GET', url: '/readyz' });
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ status: 'ok', checks: { database: 'ok', frontend: 'ok' } });
+      await app.close();
+    });
+
+    it('answers 503 when the database does not answer, without naming it to the client', async () => {
+      const app = await makeApp({}, undefined, { ping: async () => false });
+      const response = await app.inject({ method: 'GET', url: '/readyz' });
+      expect(response.statusCode).toBe(503);
+      expect(response.headers['content-type']).toContain('application/problem+json');
+      expect(response.body).not.toMatch(/database|postgres/i);
+      // Liveness must stay green: the process is fine, only a dependency is down.
+      const live = await app.inject({ method: 'GET', url: '/healthz' });
+      expect(live.statusCode).toBe(200);
+      await app.close();
+    });
+
+    it('answers 503 when the database check throws', async () => {
+      const app = await makeApp({}, undefined, {
+        ping: async () => {
+          throw new Error('connect ECONNREFUSED 10.0.0.5:5432');
+        },
+      });
+      const response = await app.inject({ method: 'GET', url: '/readyz' });
+      expect(response.statusCode).toBe(503);
+      expect(response.body).not.toContain('10.0.0.5');
+      await app.close();
+    });
+  });
 });

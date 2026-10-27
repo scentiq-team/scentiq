@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import type { AppConfig } from './config/env.js';
+import type { Database } from './db/client.js';
 import type { ReadinessCheck } from './lib/readiness.js';
 import { resolveRequestId } from './lib/request-id.js';
 import { healthRoutes } from './modules/health/routes.js';
@@ -15,6 +16,12 @@ export interface BuildAppOptions {
   config: AppConfig;
   /** Defaults to the sample product outside production and to "no products" in production. */
   products?: ProductSource;
+  /**
+   * The database /readyz checks. Omitted in development and test when no DATABASE_URL is set;
+   * staging and production always have one (the config requires it). The caller owns the
+   * connection pool and closes it after the app has stopped.
+   */
+  database?: Pick<Database, 'ping'>;
   /** Tests pass `false` to silence logs. */
   logger?: FastifyServerOptions['logger'];
 }
@@ -58,6 +65,10 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
 
   const template = await loadTemplate(config.frontendDistDir);
   const readiness: ReadinessCheck[] = [];
+  if (options.database !== undefined) {
+    const { database } = options;
+    readiness.push({ name: 'database', check: () => database.ping() });
+  }
 
   if (template !== null) {
     readiness.push({ name: 'frontend', check: () => true });

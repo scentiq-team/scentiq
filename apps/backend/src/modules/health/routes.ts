@@ -37,7 +37,8 @@ export async function healthRoutes(app: FastifyInstance, options: HealthOptions)
     return { status: 'ok' };
   });
 
-  // Readiness: every registered dependency answers. Phase 2 adds the database here.
+  // Readiness: every registered dependency answers (the frontend build and, when configured, the
+  // database). A failing check answers 503 without saying which one, to outsiders.
   app.get('/readyz', async (request, reply) => {
     reply.header('cache-control', 'no-store');
     const results = await Promise.all(

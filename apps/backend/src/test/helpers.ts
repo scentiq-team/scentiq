@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { type AppConfig, loadEnv } from '../config/env.js';
+import type { Database } from '../db/client.js';
 import type { ProductSource } from '../modules/seo/types.js';
 
 // A tiny stand-in for the built frontend. It must not be called "dist": the root .gitignore
@@ -22,16 +23,20 @@ export function testConfig(env: Record<string, string> = {}): AppConfig {
 export const productionEnv = {
   APP_ENV: 'production',
   SITE_ORIGIN: 'https://scentiq.example',
+  // Only validated, never connected to: the tests that use this config pass no database.
+  DATABASE_URL: 'postgres://scentiq_app:Pq7-r3al-looking@db.internal:5432/scentiq',
 } as const;
 
 export async function makeApp(
   env: Record<string, string> = {},
   products?: ProductSource,
+  database?: Pick<Database, 'ping'>,
 ): Promise<FastifyInstance> {
   const app = await buildApp({
     config: testConfig(env),
     logger: false,
     ...(products === undefined ? {} : { products }),
+    ...(database === undefined ? {} : { database }),
   });
   return app;
 }
