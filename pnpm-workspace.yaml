@@ -6,3 +6,10 @@ packages:
 # (optional dependencies), so its postinstall is not needed; deny it explicitly.
 allowBuilds:
   esbuild: false
+
+# drizzle-kit (a development tool that only writes migration files) still depends on a deprecated
+# loader that pulls esbuild 0.18.20, which has a known advisory (GHSA-67mh-4wv8-2f99, esbuild's
+# dev server; we never run it). Point that one path at the esbuild 0.25.12 that drizzle-kit itself
+# uses. Remove this override when drizzle-kit drops @esbuild-kit/* (docs/dependencies.md).
+overrides:
+  '@esbuild-kit/core-utils>esbuild': 0.25.12
