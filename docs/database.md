@@ -1,6 +1,6 @@
 # Database guide
 
-PostgreSQL 18 (16 or newer works), Drizzle ORM, plain SQL migrations. Decisions: [ADR-0004](adr/0004-database-postgresql-drizzle.md),
+PostgreSQL 18 (the minimum: primary keys default to the built-in `uuidv7()`, which does not exist before 18), Drizzle ORM, plain SQL migrations. Decisions: [ADR-0004](adr/0004-database-postgresql-drizzle.md),
 [ADR-0015](adr/0015-seed-and-sample-data-policy.md). Spike result: [spikes/0004-drizzle-postgres18.md](spikes/0004-drizzle-postgres18.md).
 
 **بالعربي:** قاعدة البيانات PostgreSQL. الـ backend وحده يكلمها، والـ frontend ما يعرف عنها شي. نستعمل دورين (role): `scentiq_owner` يغيّر الجداول (migrations)، و`scentiq_app` يقرأ ويكتب الصفوف بس. حتى لو أحد استغل ثغرة SQL injection بالتطبيق، ما يكدر يمسح جدول أو يعطل حماية الـ audit log.
@@ -51,7 +51,7 @@ CREATE DATABASE scentiq_dev OWNER scentiq_owner TEMPLATE template0 ENCODING 'UTF
 
 3. `pnpm db:migrate`.
 
-Use forward slashes in the `\i` path, also on Windows. The `builtin` locale provider needs PostgreSQL 17 or newer. On 16, use `LOCALE 'en_US.UTF-8'` (Linux) instead; the migration check below tells you if the locale is not suitable.
+Use forward slashes in the `\i` path, also on Windows. The `builtin` locale provider (PostgreSQL 17 and newer) is always available on 18. The migration check below tells you if a database was created with a locale that cannot handle Arabic.
 
 ## Why the database locale matters (Arabic search)
 

@@ -10,7 +10,7 @@
 Inventory and order integrity need transactions, row-level atomic updates, CHECK constraints, partial unique indexes, append-only triggers and trigram indexes for fuzzy search.
 
 ## Decision
-- PostgreSQL 18 (minimum 16). On 2026-10-08 the PostgreSQL project listed 14 to 18 as supported, 18 (18.6) as the latest major, with 18 supported until 2030.
+- PostgreSQL 18 (minimum 18 since STEP 2: the tables use the built-in `uuidv7()` as primary key default, which PostgreSQL 16 and 17 do not have). On 2026-10-08 the PostgreSQL project listed 14 to 18 as supported, 18 (18.6) as the latest major, with 18 supported until 2030.
 - Drizzle ORM (0.45 stable line), `drizzle-kit` SQL migrations committed to git and editable by hand, `pg` driver.
 - Conventions: money as integer IQD (no floats); `timestamptz` in UTC; UUIDv7 primary keys (PostgreSQL 18 should provide `uuidv7()`; the spike confirms it, fallback is application-generated); catalog entities are archived, not deleted; order items are snapshots.
 - Database-enforced rules: `on_hand >= 0`, `reserved >= 0`, `reserved <= on_hand`; unique SKU and slug; price > 0; `compare_at > price`; unique idempotency key; append-only `inventory_movements`, `audit_logs`, `order_status_history` (trigger blocks UPDATE and DELETE); RESTRICT foreign keys from orders to catalog.
