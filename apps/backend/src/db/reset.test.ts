@@ -22,6 +22,12 @@ describe('assertResetAllowed', () => {
     );
   });
 
+  it('is not fooled by ?host=, which the driver prefers over the URL host', () => {
+    expect(() =>
+      assertResetAllowed('development', 'postgres://o:x@localhost/db?host=prod.example.com'),
+    ).toThrow(ResetRefusedError);
+  });
+
   it('never puts the connection URL in the message', () => {
     try {
       assertResetAllowed('development', 'postgres://owner:topsecret@db.internal:5432/db');

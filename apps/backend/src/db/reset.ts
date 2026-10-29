@@ -3,9 +3,8 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import type { AppEnv } from '../config/env.js';
+import { isLocalDatabaseUrl } from './local-guard.js';
 import { runMigrations } from './migrate.js';
-
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
 export class ResetRefusedError extends Error {
   constructor(message: string) {
@@ -19,8 +18,7 @@ export function assertResetAllowed(appEnv: AppEnv, url: string): void {
   if (appEnv !== 'development' && appEnv !== 'test') {
     throw new ResetRefusedError(`db:reset refuses to run when APP_ENV is "${appEnv}".`);
   }
-  const host = new URL(url).hostname;
-  if (!LOCAL_HOSTS.has(host)) {
+  if (!isLocalDatabaseUrl(url)) {
     throw new ResetRefusedError(
       'db:reset only runs against a database on this computer (localhost or 127.0.0.1).',
     );

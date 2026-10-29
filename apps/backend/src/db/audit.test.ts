@@ -26,6 +26,14 @@ describe('redactDetails', () => {
     expect(output).not.toContain('S3CRET');
   });
 
+  it('keeps a Date as the ISO text JSON would give it, not as an empty object', () => {
+    const at = new Date('2026-10-26T10:00:00.000Z');
+    expect(redactDetails({ changedAt: at, password: 'x' })).toEqual({
+      changedAt: '2026-10-26T10:00:00.000Z',
+      password: '[redacted]',
+    });
+  });
+
   it('stops at a maximum depth instead of walking forever', () => {
     let deep: Record<string, unknown> = { leaf: 1 };
     for (let i = 0; i < 20; i++) deep = { next: deep };

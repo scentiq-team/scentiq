@@ -63,9 +63,9 @@ Fuzzy search uses PostgreSQL trigrams (`pg_trgm`). In a database created with th
 | --- | --- |
 | `pnpm db:migrate` | Applies pending migrations in one transaction (uses `MIGRATION_DATABASE_URL`). Safe to run again. |
 | `pnpm db:generate` | Development only. After you change `src/db/schema/`, writes a new migration into `migrations/`. Review the SQL. |
-| `pnpm db:reset` | Development only. Drops everything and migrates again. Refuses unless `APP_ENV` is `development` or `test` **and** the database is on this computer. |
+| `pnpm db:reset` | Development only. Drops everything and migrates again. Refuses unless `APP_ENV` is `development` or `test` **and** the database is on this computer. "On this computer" is checked on every host the driver could use, including `?host=` and `?hostaddr=` in the URL. |
 | `pnpm seed:reference` | Real, production-safe reference data. Must be repeatable. |
-| `pnpm seed:dev` | Sample data. Refuses unless `APP_ENV` is `development` or `staging`. Records every row in `sample_data_registry`. |
+| `pnpm seed:dev` | Sample data. Refuses unless `APP_ENV` is `development` or `staging`, and in development also refuses a database that is not on this computer. Records every row in `sample_data_registry`. |
 | `pnpm db:assert-no-sample-data` | Deployment gate: exits with an error if `sample_data_registry` has rows. Run it against production before and after every release. |
 
 In production the migration step runs the compiled file, so `drizzle-kit` (a development tool) is not needed there:
@@ -134,3 +134,4 @@ Without it those tests are skipped and the run says so. CI sets `REQUIRE_DB_TEST
 | `password authentication failed` | The password in `.env` is not the one the role has. For development use the values in `.env.example`. |
 | `/readyz` answers 503 | The database does not answer. `/healthz` stays 200 on purpose, so the platform does not restart a healthy process. Check the database, the URL and the pool size. |
 | Server refuses to start: "role with dangerous privileges" | `DATABASE_URL` uses a superuser (or similar). Use `scentiq_app`. |
+| Server refuses to start in staging or production: "database is not reachable, so its role cannot be checked" | At startup the server tries five times, two seconds apart, to read its own role. If the database never answers it stops instead of running unchecked; the platform restarts it. Development only warns. |

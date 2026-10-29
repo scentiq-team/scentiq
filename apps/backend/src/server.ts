@@ -1,7 +1,12 @@
 import { buildApp } from './app.js';
 import { type AppConfig, EnvError, loadEnv } from './config/env.js';
 import { createDatabase, type Database } from './db/client.js';
-import { inspectRole, roleVerdict } from './db/role-check.js';
+import {
+  checkRoleAtStartup,
+  inspectRole,
+  isStrictEnv,
+  startupRoleOptions,
+} from './db/role-check.js';
 
 async function main(): Promise<void> {
   let config: AppConfig;
@@ -51,26 +56,33 @@ async function main(): Promise<void> {
 }
 
 /**
- * Staging and production refuse to run as a powerful database role. If the database cannot be
- * reached right now the check is skipped (/readyz reports the outage); development only warns.
+ * Staging and production refuse to run as a powerful database role, and also refuse to start
+ * when the role cannot be checked (the database stayed unreachable). Development only warns.
  */
 async function checkDatabaseRole(
   log: { warn: (obj: object, msg: string) => void; error: (obj: object, msg: string) => void },
   config: AppConfig,
   database: Database,
 ): Promise<void> {
-  let report: Awaited<ReturnType<typeof inspectRole>>;
-  try {
-    report = await inspectRole(database.db);
-  } catch {
+  const result = await checkRoleAtStartup(
+    () => inspectRole(database.db),
+    config.appEnv,
+    startupRoleOptions(config.appEnv),
+  );
+  if (result.status === 'ok') return;
+
+  if (result.status === 'unreachable') {
+    if (isStrictEnv(config.appEnv)) {
+      log.error({}, 'The database is not reachable, so its role cannot be checked. Not starting.');
+      await database.close();
+      process.exit(1);
+    }
     log.warn({}, 'database not reachable at startup: skipped the database role check');
     return;
   }
-  const verdict = roleVerdict(report, config.appEnv);
-  if (verdict === 'ok') return;
 
-  const fields = { role: report.role, attributes: report.dangerousAttributes };
-  if (verdict === 'refuse') {
+  const fields = { role: result.report.role, attributes: result.report.dangerousAttributes };
+  if (result.status === 'refuse') {
     log.error(
       fields,
       'DATABASE_URL uses a role with dangerous privileges. Use the scentiq_app role.',

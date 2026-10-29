@@ -34,13 +34,18 @@ const databaseUrlSchema = z.preprocess(
     .string()
     .refine(
       (value) => {
-        try {
-          return ['postgres:', 'postgresql:'].includes(new URL(value).protocol);
-        } catch {
-          return false;
-        }
+        const url = parseUrl(value);
+        return (
+          url !== undefined &&
+          ['postgres:', 'postgresql:'].includes(url.protocol) &&
+          canDecode(url.username) &&
+          canDecode(url.password)
+        );
       },
-      { message: 'must be a URL that starts with postgres:// or postgresql://' },
+      {
+        message:
+          'must be a valid URL that starts with postgres:// or postgresql:// (percent-encode special characters in the user name and password)',
+      },
     )
     .optional(),
 );
@@ -92,6 +97,32 @@ const envSchema = z
     }
   });
 
+/** `new URL` throws a TypeError that carries the whole input (the password included). */
+function parseUrl(value: string): URL | undefined {
+  try {
+    return new URL(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function canDecode(text: string): boolean {
+  try {
+    decodeURIComponent(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function passwordOf(url: URL): string {
+  try {
+    return decodeURIComponent(url.password);
+  } catch {
+    return url.password;
+  }
+}
+
 interface DatabaseEnv {
   DATABASE_URL?: string | undefined;
   MIGRATION_DATABASE_URL?: string | undefined;
@@ -107,14 +138,15 @@ function checkDatabaseUrls(env: DatabaseEnv, ctx: z.RefinementCtx): void {
     });
     return;
   }
-  for (const [name, value] of [
-    ['DATABASE_URL', env.DATABASE_URL],
-    ['MIGRATION_DATABASE_URL', env.MIGRATION_DATABASE_URL],
+  // A malformed URL is already reported by the field itself; here it is simply skipped.
+  const appUrl = parseUrl(env.DATABASE_URL);
+  const migrationUrl =
+    env.MIGRATION_DATABASE_URL === undefined ? undefined : parseUrl(env.MIGRATION_DATABASE_URL);
+  for (const [name, url] of [
+    ['DATABASE_URL', appUrl],
+    ['MIGRATION_DATABASE_URL', migrationUrl],
   ] as const) {
-    if (
-      value !== undefined &&
-      decodeURIComponent(new URL(value).password).includes(DEV_PASSWORD_MARKER)
-    ) {
+    if (url !== undefined && passwordOf(url).includes(DEV_PASSWORD_MARKER)) {
       ctx.addIssue({
         code: 'custom',
         path: [name],
@@ -123,8 +155,9 @@ function checkDatabaseUrls(env: DatabaseEnv, ctx: z.RefinementCtx): void {
     }
   }
   if (
-    env.MIGRATION_DATABASE_URL !== undefined &&
-    new URL(env.MIGRATION_DATABASE_URL).username === new URL(env.DATABASE_URL).username
+    appUrl !== undefined &&
+    migrationUrl !== undefined &&
+    migrationUrl.username === appUrl.username
   ) {
     ctx.addIssue({
       code: 'custom',

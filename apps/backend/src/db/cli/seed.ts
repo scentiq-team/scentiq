@@ -1,5 +1,5 @@
 import { createDatabase } from '../client.js';
-import { runSeeds, type SeedLevel } from '../seed/runner.js';
+import { assertSeedAllowed, runSeeds, type SeedLevel } from '../seed/runner.js';
 import { seeders } from '../seed/seeders.js';
 import { fail, loadConfigOrExit, runTool } from './context.js';
 
@@ -8,6 +8,7 @@ runTool(async () => {
   if (level !== 'reference' && level !== 'dev') fail('Usage: seed <reference|dev>');
   const config = loadConfigOrExit();
   if (config.databaseUrl === undefined) fail('DATABASE_URL is required.');
+  assertSeedAllowed(level, config.appEnv, config.databaseUrl);
 
   const database = createDatabase({
     url: config.databaseUrl,

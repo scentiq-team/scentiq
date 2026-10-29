@@ -153,6 +153,24 @@ describe('loadEnv', () => {
       expect(message).not.toContain('hunter2');
     });
 
+    it('reports a malformed URL in production as a normal configuration error, without its text', () => {
+      for (const bad of ['not a url with-SECRETpw', 'postgres://u:p%zzSECRETpw@h/db']) {
+        let error: unknown;
+        try {
+          loadEnv({
+            APP_ENV: 'production',
+            SITE_ORIGIN: 'https://scentiq.example',
+            DATABASE_URL: bad,
+          });
+        } catch (caught) {
+          error = caught;
+        }
+        expect(error, bad).toBeInstanceOf(EnvError);
+        expect((error as Error).message).toMatch(/DATABASE_URL/);
+        expect((error as Error).message).not.toContain('SECRETpw');
+      }
+    });
+
     it('refuses the development password in staging and production', () => {
       const devUrl = 'postgres://scentiq_app:devonly_app@db.internal:5432/scentiq';
       expect(() =>

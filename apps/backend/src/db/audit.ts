@@ -24,6 +24,9 @@ export function redactDetails(value: unknown, depth = 0): unknown {
   if (depth > MAX_DEPTH) return '[truncated]';
   if (Array.isArray(value)) return value.map((item) => redactDetails(item, depth + 1));
   if (typeof value === 'object' && value !== null) {
+    // A Date (or anything else with toJSON) must keep the value JSON would give it.
+    const { toJSON } = value as { toJSON?: unknown };
+    if (typeof toJSON === 'function') return redactDetails(toJSON.call(value), depth + 1);
     return Object.fromEntries(
       Object.entries(value).map(([key, inner]) => [
         key,
