@@ -7,7 +7,7 @@ All records linked below were accepted on 2026-10-09 (Phase 0). Each ADR starts 
 | [0001](0001-modular-monolith-single-origin.md) | Modular monolith on a single origin (greenfield) | Accepted | D1, D3, D9 |
 | [0002](0002-rendering-seo-spa-with-seo-shell.md) | Vite SPA with a backend-injected SEO shell | Accepted | D2, D11 |
 | [0003](0003-backend-fastify-zod-rest.md) | Fastify 5, Zod 4, REST | Accepted | D3, D16 |
-| [0004](0004-database-postgresql-drizzle.md) | PostgreSQL 18 with Drizzle (spike gate in Phase 2) | Accepted, gated | D4 |
+| [0004](0004-database-postgresql-drizzle.md) | PostgreSQL 18 with Drizzle | Accepted (Phase 2 spike passed 2026-10-26) | D4 |
 | [0005](0005-arabic-first-search-in-postgres.md) | Arabic-first search inside PostgreSQL | Accepted | D5 |
 | [0006](0006-inventory-on-hand-reserved.md) | on_hand / reserved with atomic reservation | Accepted | D12 |
 | [0007](0007-order-checkout-integrity.md) | Order and checkout integrity, abuse control | Accepted | D13, D14 |
