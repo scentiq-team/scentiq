@@ -41,6 +41,66 @@ jobs:
       # Fails if the style guide or the sample product page leaked into the production build.
       - run: pnpm check:bundle
 
+  database:
+    # Service containers only exist on Linux runners, so the database tests run here and the
+    # Windows job above keeps the checks that need no database. REQUIRE_DB_TESTS makes a missing
+    # database a failure instead of a silent skip.
+    name: Database (PostgreSQL 18)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          # Throwaway superuser of a container that lives for this job only.
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_ADMIN_URL: postgres://postgres:ci-only-password@127.0.0.1:5432/postgres
+      REQUIRE_DB_TESTS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Includes every *.db.test.ts against the real PostgreSQL 18 image.
+      - run: pnpm test
+      - name: Migrations match the schema (fails if a schema change has no migration)
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain apps/backend/migrations)" ]; then
+            echo "The schema changed but its migration was not committed:"
+            git status --porcelain apps/backend/migrations
+            exit 1
+          fi
+      - run: pnpm build
+      - name: Production path (roles, database, compiled migration, server, deployment gate)
+        working-directory: apps/backend
+        env:
+          PGPASSWORD: ci-only-password
+          MIGRATION_DATABASE_URL: postgres://scentiq_owner:devonly_owner@127.0.0.1:5432/smoke
+          DATABASE_URL: postgres://scentiq_app:devonly_app@127.0.0.1:5432/smoke
+        run: |
+          psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -f ../../docker/postgres/01-dev-roles.sql
+          psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE smoke OWNER scentiq_owner TEMPLATE template0 ENCODING 'UTF8' LOCALE_PROVIDER builtin BUILTIN_LOCALE 'C.UTF-8'"
+          node dist/db/cli/migrate.js
+          APP_ENV=development PORT=3999 node dist/server.js &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:3999/readyz && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3999/readyz
+          node dist/db/cli/assert-no-sample-data.js
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest

@@ -195,7 +195,11 @@ describe('production rules', () => {
 
 describe('non-production environments are never indexable', () => {
   it('sends X-Robots-Tag and noindex in staging', async () => {
-    app = await makeApp({ APP_ENV: 'staging', SITE_ORIGIN: 'https://staging.scentiq.example' });
+    app = await makeApp({
+      ...productionEnv,
+      APP_ENV: 'staging',
+      SITE_ORIGIN: 'https://staging.scentiq.example',
+    });
     const response = await get('/');
     expect(response.headers['x-robots-tag']).toBe('noindex, nofollow');
     expect(response.body).toContain('<meta name="robots" content="noindex,nofollow">');

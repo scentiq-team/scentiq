@@ -19,7 +19,13 @@
     "test:e2e": "pnpm --filter @scentiq/shared build && pnpm --filter @scentiq/backend build && pnpm --filter @scentiq/frontend test:e2e",
     "clean": "node scripts/clean.mjs",
     "check:bundle": "node scripts/check-production-bundle.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:bundle"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:bundle",
+    "db:generate": "pnpm --filter @scentiq/backend db:generate",
+    "db:migrate": "pnpm --filter @scentiq/backend db:migrate",
+    "db:reset": "pnpm --filter @scentiq/backend db:reset",
+    "seed:reference": "pnpm --filter @scentiq/backend seed:reference",
+    "seed:dev": "pnpm --filter @scentiq/backend seed:dev",
+    "db:assert-no-sample-data": "pnpm --filter @scentiq/backend db:assert-no-sample-data"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

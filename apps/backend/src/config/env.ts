@@ -24,6 +24,35 @@ const originSchema = z.preprocess(
     .optional(),
 );
 
+/**
+ * A PostgreSQL connection URL. The refine message never contains the value, because the URL
+ * carries the password.
+ */
+const databaseUrlSchema = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .refine(
+      (value) => {
+        const url = parseUrl(value);
+        return (
+          url !== undefined &&
+          ['postgres:', 'postgresql:'].includes(url.protocol) &&
+          canDecode(url.username) &&
+          canDecode(url.password)
+        );
+      },
+      {
+        message:
+          'must be a valid URL that starts with postgres:// or postgresql:// (percent-encode special characters in the user name and password)',
+      },
+    )
+    .optional(),
+);
+
+/** Passwords of the development roles contain this word (docker/postgres/01-dev-roles.sql). */
+export const DEV_PASSWORD_MARKER = 'devonly';
+
 const envSchema = z
   .object({
     APP_ENV: z.preprocess(blankToUndefined, z.enum(APP_ENVS).default('development')),
@@ -42,10 +71,17 @@ const envSchema = z
       blankToUndefined,
       z.string().min(1).default('../frontend/dist'),
     ),
+    DATABASE_URL: databaseUrlSchema,
+    DATABASE_POOL_MAX: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(1).max(50).default(10),
+    ),
+    MIGRATION_DATABASE_URL: databaseUrlSchema,
   })
   .superRefine((env, ctx) => {
     const needsOrigin = env.APP_ENV === 'staging' || env.APP_ENV === 'production';
     if (!needsOrigin) return;
+    checkDatabaseUrls(env, ctx);
     if (env.SITE_ORIGIN === undefined) {
       ctx.addIssue({
         code: 'custom',
@@ -61,6 +97,77 @@ const envSchema = z
     }
   });
 
+/** `new URL` throws a TypeError that carries the whole input (the password included). */
+function parseUrl(value: string): URL | undefined {
+  try {
+    return new URL(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function canDecode(text: string): boolean {
+  try {
+    decodeURIComponent(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function passwordOf(url: URL): string {
+  try {
+    return decodeURIComponent(url.password);
+  } catch {
+    return url.password;
+  }
+}
+
+interface DatabaseEnv {
+  DATABASE_URL?: string | undefined;
+  MIGRATION_DATABASE_URL?: string | undefined;
+}
+
+/** Rules that only apply when real customers could be affected (staging and production). */
+function checkDatabaseUrls(env: DatabaseEnv, ctx: z.RefinementCtx): void {
+  if (env.DATABASE_URL === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['DATABASE_URL'],
+      message: 'is required when APP_ENV is staging or production',
+    });
+    return;
+  }
+  // A malformed URL is already reported by the field itself; here it is simply skipped.
+  const appUrl = parseUrl(env.DATABASE_URL);
+  const migrationUrl =
+    env.MIGRATION_DATABASE_URL === undefined ? undefined : parseUrl(env.MIGRATION_DATABASE_URL);
+  for (const [name, url] of [
+    ['DATABASE_URL', appUrl],
+    ['MIGRATION_DATABASE_URL', migrationUrl],
+  ] as const) {
+    if (url !== undefined && passwordOf(url).includes(DEV_PASSWORD_MARKER)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [name],
+        message: 'uses a development password; create real database roles for this environment',
+      });
+    }
+  }
+  if (
+    appUrl !== undefined &&
+    migrationUrl !== undefined &&
+    migrationUrl.username === appUrl.username
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['MIGRATION_DATABASE_URL'],
+      message:
+        'must use a different database role than DATABASE_URL (the application role must not own the tables)',
+    });
+  }
+}
+
 export interface AppConfig {
   appEnv: AppEnv;
   host: string;
@@ -71,6 +178,11 @@ export interface AppConfig {
   siteOrigin: string;
   /** Absolute path of the built frontend. */
   frontendDistDir: string;
+  /** Application role (read and write rows only). Optional in development and test. */
+  databaseUrl: string | undefined;
+  databasePoolMax: number;
+  /** Owner role used only by `pnpm db:migrate` and `pnpm db:reset`, never by the server. */
+  migrationDatabaseUrl: string | undefined;
   isProduction: boolean;
   /** Only production may be indexed; staging, development and test are always noindex. */
   allowIndexing: boolean;
@@ -110,6 +222,9 @@ export function loadEnv(
     trustProxy: env.TRUST_PROXY,
     siteOrigin: env.SITE_ORIGIN ?? `http://localhost:${env.PORT}`,
     frontendDistDir: resolve(cwd, env.FRONTEND_DIST_DIR),
+    databaseUrl: env.DATABASE_URL,
+    databasePoolMax: env.DATABASE_POOL_MAX,
+    migrationDatabaseUrl: env.MIGRATION_DATABASE_URL,
     isProduction,
     allowIndexing: isProduction,
     allowSampleData: !isProduction,

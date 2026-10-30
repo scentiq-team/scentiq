@@ -1,0 +1,32 @@
+# Local development database (ADR-0004). Start it with:  docker compose up -d
+# Stop it with:  docker compose down        Wipe it completely with:  docker compose down -v
+#
+# The database listens on 127.0.0.1 only, so other devices on the network cannot reach it. The
+# credentials are throwaway development values (see docker/postgres/01-dev-roles.sql).
+services:
+  postgres:
+    image: postgres:18
+    container_name: scentiq-postgres
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devonly_admin
+      POSTGRES_DB: scentiq_dev
+      # C.UTF-8 from PostgreSQL itself (not from the operating system): Arabic letters count as
+      # letters for trigram search, and the result is the same on every machine.
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8'
+    volumes:
+      # PostgreSQL 18 images keep their data under /var/lib/postgresql (a versioned subfolder).
+      - scentiq-pgdata:/var/lib/postgresql
+      - ./docker/postgres/01-dev-roles.sql:/docker-entrypoint-initdb.d/01-dev-roles.sql:ro
+      - ./docker/postgres/02-dev-database-owner.sql:/docker-entrypoint-initdb.d/02-dev-database-owner.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d scentiq_dev']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  scentiq-pgdata:

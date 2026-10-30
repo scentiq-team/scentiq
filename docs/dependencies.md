@@ -9,6 +9,8 @@ version we pinned an older, mature one instead of adding an exclusion: `@fastify
 `13.1.1` and `jsdom` to `30.1.2`. Raise them when the newer versions have aged. The `esbuild`
 build script is denied in `pnpm-workspace.yaml` because it ships prebuilt binaries.
 
+Override (added 2026-10-27): `@esbuild-kit/core-utils>esbuild` is pinned to `0.25.12` in `pnpm-workspace.yaml`. `drizzle-kit` 0.31.11 depends on a deprecated loader that pulls `esbuild` 0.18.20, which has advisory GHSA-67mh-4wv8-2f99 (esbuild's development server, which nobody runs here). `0.25.12` is the version `drizzle-kit` itself already uses. Remove the override when `drizzle-kit` drops `@esbuild-kit/*`. `pnpm db:generate` ("No schema changes") proves the tool still loads.
+
 Checked on 2026-10-24: `pnpm audit` reports no known vulnerabilities. It had reported 11 after new
 advisories appeared (undici through jsdom, fast-uri through fastify); the lockfile now resolves the
 patched `undici` 8.12.3, `fast-uri` 3.1.9 and `fast-uri` 4.2.3 with no override. CI runs
@@ -38,7 +40,11 @@ patched `undici` 8.12.3, `fast-uri` 3.1.9 and `fast-uri` 4.2.3 with no override.
 | `@fastify/helmet` (pinned `13.1.1`) | Security headers and the strict Content-Security-Policy. |
 | `@fastify/static` | Serves the built frontend files with safe path handling (no hand-written path code). |
 | `@scentiq/shared` | Shared contracts and route table. |
-| `tsx` (dev) | Runs TypeScript with reload during development. |
+| `drizzle-orm` (pinned `0.45.4`) | Typed queries and the SQL migrator that production runs (ADR-0004). Chosen over Prisma and Kysely by the spike, which proved CHECK, partial unique indexes, trigram, `FOR UPDATE`, triggers and hand-edited migrations. 1.0 is still a release candidate, so the stable 0.45 line is pinned. |
+| `pg` (pinned `8.23.1`) | PostgreSQL driver used by Drizzle. One pool, created in `src/db/client.ts`. |
+| `tsx` (dev) | Runs TypeScript with reload during development, and runs the database command line tools. |
+| `drizzle-kit` (dev, pinned `0.31.11`) | Writes migration files after a schema change (`pnpm db:generate`). Never runs in production. Pulls a deprecated `@esbuild-kit/*` loader, see the override note below. |
+| `@types/pg` (dev, pinned `8.23.1`) | Types for `pg`. |
 | `@types/node`, `vitest` (dev) | Node types and tests. |
 
 ## `apps/frontend`
