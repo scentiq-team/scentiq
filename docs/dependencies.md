@@ -22,6 +22,7 @@ patched `undici` 8.12.3, `fast-uri` 3.1.9 and `fast-uri` 4.2.3 with no override.
 | --- | --- |
 | `@biomejs/biome` | One tool for lint and format instead of ESLint, Prettier and plugins (ADR-0014). |
 | `typescript` | Type checking and the backend build. Version 7 works with `tsc -b` and project references; the fallback to 6.x allowed by ADR-0013 was not needed. |
+| `@vitest/coverage-v8` (dev, pinned `5.0.4`) | Measures the ADR-0014 target (at least 90% on pure domain logic). Added in STEP 3 with `pnpm --filter @scentiq/shared test:coverage`, which fails below 90%. It must match the `vitest` version exactly, so it is pinned and moves together with it. |
 
 ## `packages/shared`
 

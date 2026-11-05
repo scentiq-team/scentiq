@@ -7,6 +7,7 @@
 import {
   COLLECTION_ITEM_MODES,
   COLLECTION_KINDS,
+  COLLECTION_RULES_MAX_BYTES,
   DESCRIPTION_MAX_LENGTH,
   NAME_MAX_LENGTH,
   PRODUCT_STATUSES,
@@ -36,9 +37,6 @@ import {
 import { mediaAssets } from './media.js';
 import { products } from './products.js';
 import { slugCheck } from './taxonomy.js';
-
-/** Upper bound for `rules`, so a row can never become a data dump. */
-export const COLLECTION_RULES_MAX_BYTES = 8_192;
 
 export const collections = pgTable(
   'collections',

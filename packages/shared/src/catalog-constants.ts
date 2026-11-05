@@ -78,3 +78,9 @@ export const REDIRECT_ENTITY_TYPES = [
 export type RedirectEntityType = (typeof REDIRECT_ENTITY_TYPES)[number];
 
 export const MAX_CATEGORY_DEPTH = 2;
+
+/**
+ * Upper bound for a collection's stored `rules` (CHECK `collections_rules_object`), so a row can never
+ * become a data dump. The Zod schema limits list sizes so that any valid rules always fit.
+ */
+export const COLLECTION_RULES_MAX_BYTES = 8_192;
