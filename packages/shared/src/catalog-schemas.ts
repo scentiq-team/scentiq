@@ -213,10 +213,14 @@ export const productImagesInputSchema = z
 export const altTextSchema = requiredText(ALT_TEXT_MAX_LENGTH);
 
 export type BrandInput = z.infer<typeof brandInputSchema>;
+export type BrandUpdateInput = z.infer<typeof brandUpdateSchema>;
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
+export type CategoryUpdateInput = z.infer<typeof categoryUpdateSchema>;
 export type NoteInput = z.infer<typeof noteInputSchema>;
+export type NoteUpdateInput = z.infer<typeof noteUpdateSchema>;
 export type TagInput = z.infer<typeof tagInputSchema>;
 export type ProductCreateInput = z.infer<typeof productCreateSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
 export type VariantInput = z.infer<typeof variantInputSchema>;
+export type VariantUpdateInput = z.infer<typeof variantUpdateSchema>;
 export type ProductNoteInput = z.infer<typeof productNoteInputSchema>;

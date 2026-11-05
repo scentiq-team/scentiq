@@ -35,3 +35,18 @@ export const isStillReferenced = (error: unknown): boolean => {
   const code = pgErrorCode(error);
   return code === PG_RESTRICT_VIOLATION || code === PG_FOREIGN_KEY_VIOLATION;
 };
+
+/**
+ * The name of the constraint, index or trigger rule that rejected a statement (for example
+ * `products_slug_uq`). Like `pgErrorCode` it looks under Drizzle's wrapper. Services use it to turn a
+ * database rejection into a stable reason code; the name itself never goes to a client.
+ */
+export function pgConstraintName(error: unknown): string | undefined {
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && typeof current === 'object' && current !== null; depth++) {
+    const constraint = (current as { constraint?: unknown }).constraint;
+    if (typeof constraint === 'string') return constraint;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return undefined;
+}
