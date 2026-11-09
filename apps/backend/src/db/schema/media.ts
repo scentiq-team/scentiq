@@ -6,7 +6,7 @@ import { check, integer, pgTable, primaryKey, text, uniqueIndex, uuid } from 'dr
 import { createdAt, inList, optionalBoundedText, primaryId } from './columns.js';
 
 /** Random, never derived from the uploaded file name. */
-const STORAGE_KEY_PATTERN = '^[a-z0-9][a-z0-9/_-]{7,119}$';
+export const STORAGE_KEY_PATTERN = '^[a-z0-9][a-z0-9/_-]{7,119}$';
 
 export const mediaAssets = pgTable(
   'media_assets',

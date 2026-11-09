@@ -46,6 +46,7 @@ patched `undici` 8.12.3, `fast-uri` 3.1.9 and `fast-uri` 4.2.3 with no override.
 | `tsx` (dev) | Runs TypeScript with reload during development, and runs the database command line tools. |
 | `drizzle-kit` (dev, pinned `0.31.11`) | Writes migration files after a schema change (`pnpm db:generate`). Never runs in production. Pulls a deprecated `@esbuild-kit/*` loader, see the override note below. |
 | `@types/pg` (dev, pinned `8.23.1`) | Types for `pg`. |
+| `sharp` (`^0.35.5`) | The only image decoder and encoder (ADR-0009, added in STEP 3). Every upload is decoded and re-encoded to WebP, which removes EXIF/GPS and anything hidden in the file; `limitInputPixels` stops decompression bombs. Chosen because it is the standard native (libvips) image library for Node, fast, and has a built-in pixel limit and a bytes-in, bytes-out API that fits this pipeline; shelling out to ImageMagick would add a process boundary and a larger attack surface. It ships prebuilt binaries as optional packages, so there is no build script to allow. Its libvips binaries are LGPL-3.0: we link them dynamically as shipped and do not modify them. Verified on 0.35.5: JPEG, PNG, WebP and AVIF decode; **HEIC/HEVC does not** (libheif reads the file's metadata but has no HEVC decoder), so iPhone HEIC uploads are refused with their own reason and the uploader is asked for JPEG (`docs/database.md`, media). |
 | `@types/node`, `vitest` (dev) | Node types and tests. |
 
 ## `apps/frontend`
@@ -74,5 +75,4 @@ Phase 1 it is about 136.5 KB, so there is roughly 13 KB of headroom for the next
 
 ADR-0013 and ADR-0004 name libraries that are deliberately not installed yet. Each is added, with a
 row above, in the phase that first needs it: Zustand (cart, wishlist), React Hook Form (checkout and
-Studio forms), `lucide-react` (icons), PostgreSQL driver and Drizzle (Phase 2, after its spike),
-`sharp` (media, Phase 3 or later).
+Studio forms), `lucide-react` (icons).
