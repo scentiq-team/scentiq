@@ -5,7 +5,7 @@
 A luxury perfume store: Arabic-first, RTL, mobile-first, Iraq-first. Single vendor, Cash on Delivery,
 guest checkout, IQD. The admin area is called **Perfume Studio**.
 
-**Status:** Phase 2 (database and backend core) is in progress on `step-2/database`; Phase 1 (Foundation) is waiting for review in PR #1. There is no catalog, cart or checkout yet.
+**Status:** Phase 3 (catalog data layer) is in progress on `step-3/catalog`, stacked on Phase 2 (database and backend core, `step-2/database`); Phase 1 (Foundation) is waiting for review in PR #1. The catalog has tables, rules, services, a media library and seed data, but **no HTTP routes yet**: Studio (Phase 7) and the public API (Phase 4) come next. There is no cart or checkout yet.
 The phase plan is in [docs/adr/0017-phase-plan-scope-agreement.md](docs/adr/0017-phase-plan-scope-agreement.md).
 
 ## Layout
