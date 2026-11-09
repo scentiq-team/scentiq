@@ -2,6 +2,9 @@
 // deployment gate run) as separate processes, so the wiring, the exit codes and the messages
 // are tested, not only the functions behind them.
 import { execFile } from 'node:child_process';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import pg from 'pg';
@@ -11,12 +14,12 @@ import { createTestDatabase, describeDb, type TestDatabase } from '../test/datab
 const run = promisify(execFile);
 const BACKEND_DIR = fileURLToPath(new URL('../..', import.meta.url));
 
-async function cli(tool: string, args: string[], env: Record<string, string>) {
+async function cli(tool: string, args: string[], env: Record<string, string>, timeout = 30_000) {
   try {
     const { stdout, stderr } = await run(
       process.execPath,
       ['--import', 'tsx', `src/db/cli/${tool}.ts`, ...args],
-      { cwd: BACKEND_DIR, env: { PATH: process.env.PATH ?? '', ...env }, timeout: 30_000 },
+      { cwd: BACKEND_DIR, env: { PATH: process.env.PATH ?? '', ...env }, timeout },
     );
     return { code: 0, stdout, stderr };
   } catch (error) {
@@ -101,13 +104,46 @@ describeDb('command line tools', () => {
       expect(result.stderr).toContain('only runs in development or staging');
     });
 
-    it('runs in development', async () => {
-      const result = await cli('seed', ['dev'], {
+    it('runs in development: seeds the sample catalog, and the deployment gate then fails', async () => {
+      // Its own database and image folder: this test fills the registry, the gate tests below need
+      // an empty one, and the images must not land in the developer's real image folder.
+      const seeded = await createTestDatabase();
+      const images = await mkdtemp(join(tmpdir(), 'scentiq-cli-seed-'));
+      const env = {
         APP_ENV: 'development',
-        DATABASE_URL: ready.appUrl,
-      });
-      expect(result.code).toBe(0);
-    });
+        DATABASE_URL: seeded.appUrl,
+        MEDIA_LOCAL_DIR: images,
+      };
+      const pool = new pg.Pool({ connectionString: seeded.appUrl, max: 1 });
+      try {
+        const result = await cli('seed', ['dev'], env, 120_000);
+        expect(result.code).toBe(0);
+        expect(result.stdout).toMatch(/\d+ brands and \d+ products added/);
+
+        const registry = await pool.query('select count(*) from sample_data_registry');
+        expect(Number(registry.rows[0].count)).toBeGreaterThan(100);
+        const files = (await readdir(images, { recursive: true, withFileTypes: true })).filter(
+          (e) => e.isFile(),
+        );
+        expect(files.length).toBeGreaterThan(20);
+
+        // The deployment gate sees the sample data.
+        const gate = await cli('assert-no-sample-data', [], env);
+        expect(gate.code).toBe(1);
+        expect(gate.stderr).toMatch(/Found \d+ sample data row\(s\)/);
+
+        // Running it again changes nothing.
+        const again = await cli('seed', ['dev'], env, 120_000);
+        expect(again.code).toBe(0);
+        expect(again.stdout).toContain('already there');
+        const afterRegistry = await pool.query('select count(*) from sample_data_registry');
+        expect(afterRegistry.rows[0].count).toBe(registry.rows[0].count);
+      } finally {
+        await pool.end();
+        await rm(images, { recursive: true, force: true });
+        await seeded.drop();
+      }
+    }, 300_000);
 
     it('rejects an unknown level', async () => {
       const result = await cli('seed', ['everything'], {

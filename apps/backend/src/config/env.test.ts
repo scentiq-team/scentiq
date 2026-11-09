@@ -21,6 +21,16 @@ describe('loadEnv', () => {
       allowSampleData: true,
     });
     expect(config.frontendDistDir).toBe(resolve('/work/apps/backend', '../frontend/dist'));
+    expect(config.mediaLocalDir).toBe(resolve('/work/apps/backend', '.data/media'));
+  });
+
+  it('MEDIA_LOCAL_DIR can move the image folder; a blank value means the default', () => {
+    expect(loadEnv({ MEDIA_LOCAL_DIR: '../images' }, '/work/apps/backend').mediaLocalDir).toBe(
+      resolve('/work/apps/backend', '../images'),
+    );
+    expect(loadEnv({ MEDIA_LOCAL_DIR: ' ' }, '/work/apps/backend').mediaLocalDir).toBe(
+      resolve('/work/apps/backend', '.data/media'),
+    );
   });
 
   it('reads and coerces explicit values', () => {
