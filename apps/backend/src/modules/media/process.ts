@@ -23,6 +23,10 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
  * 150 to 200 MB, which is why the limit exists: a 40 KB PNG can declare billions of pixels.
  */
 export const MAX_SOURCE_PIXELS = 50_000_000;
+/** How much of an uploaded file name is looked at. */
+const MAX_LABEL_INPUT = 2048;
+/** Half of an emoji or other astral character, left alone after a cut. */
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
 /** WebP quality for product photos: visually clean at a fraction of the JPEG size. */
 export const WEBP_QUALITY = 82;
 
@@ -162,7 +166,11 @@ export async function processImage(
  */
 export function sanitizeLabel(name: string | undefined | null): string | null {
   if (name === undefined || name === null) return null;
+  // The name is the sender's. Work on its tail only (a file name sits at the end of a path), so a
+  // multi-megabyte "name" costs nothing; `toWellFormed` replaces a surrogate cut in half.
   const cleaned = name
+    .slice(-MAX_LABEL_INPUT)
+    .replace(LONE_SURROGATE, '')
     .normalize('NFC')
     // Folders: keep what follows the last slash or backslash.
     .replace(/^.*[\\/]/s, '')

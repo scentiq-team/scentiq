@@ -322,6 +322,23 @@ describe('sanitizeLabel', () => {
     },
   );
 
+  it('copes with an enormous name, and still finds the file name at the end of a long path', () => {
+    const started = Date.now();
+    const huge = `${'../'.repeat(2_000_000)}final-name.jpg`;
+    expect(sanitizeLabel(huge)).toBe('final-name.jpg');
+    expect(sanitizeLabel('x'.repeat(5_000_000))?.length).toBe(200);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it('never returns a lone surrogate', () => {
+    // 2049 characters ending in an emoji: the cut at 2048 characters keeps the emoji whole, but a
+    // name that STARTS with half an emoji after the cut must lose it.
+    const cut = `\u{1F600}${'a'.repeat(2047)}`; // 2049 UTF-16 units; the tail keeps 2048: half an emoji + a's
+    const label = sanitizeLabel(cut);
+    expect(label).toBe('a'.repeat(200));
+    expect(label).not.toMatch(/[\ud800-\udfff]/);
+  });
+
   it('keeps at most 200 characters, counting letters not bytes', () => {
     const long = sanitizeLabel('ع'.repeat(300));
     expect(Array.from(long ?? '').length).toBe(200);
