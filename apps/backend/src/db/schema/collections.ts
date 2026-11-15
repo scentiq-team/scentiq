@@ -108,7 +108,9 @@ export const collections = pgTable(
 
 /**
  * `pinned` rows carry a position (shown first, in that order); `excluded` rows have none.
- * A manual collection holds only pinned rows (checked by the service).
+ * A manual collection should hold only pinned rows. Nothing enforces that yet: the collection write
+ * service arrives with Studio (Phase 7A), and until then the read queries ignore rows that do not
+ * apply to the collection kind, so a wrong row cannot show a wrong product.
  */
 export const collectionProducts = pgTable(
   'collection_products',
