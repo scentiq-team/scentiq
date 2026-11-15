@@ -295,6 +295,46 @@ describeDb('catalog database rules', () => {
         'categories_max_depth',
       );
     });
+    // Two administrators at the same instant: one puts X under Y while the other puts Y under Z.
+    // Each check passes on its own (the other change is not committed yet), together they would
+    // build a third level.
+    it('rejects the second of two simultaneous moves that together would build a third level', async () => {
+      const x = await insert('categories', { slug: 'race-x', name_ar: 'ا', name_en: 'RaceX' });
+      const y = await insert('categories', { slug: 'race-y', name_ar: 'ا', name_en: 'RaceY' });
+      const z = await insert('categories', { slug: 'race-z', name_ar: 'ا', name_en: 'RaceZ' });
+      const one = await app.connect();
+      const two = await app.connect();
+      try {
+        await one.query('begin');
+        await one.query('update categories set parent_id = $1 where id = $2', [y, x]);
+        await two.query('begin');
+        let settled = false;
+        const second = two
+          .query('update categories set parent_id = $1 where id = $2', [z, y])
+          .finally(() => {
+            settled = true;
+          });
+        second.catch(() => {}); // judged below
+        // Give it time to finish, or to be seen waiting for the other transaction.
+        for (let tries = 0; tries < 100 && !settled; tries++) {
+          const waiting = await app.query('select 1 from pg_locks where not granted');
+          if (waiting.rows.length > 0) break;
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        await one.query('commit');
+        await rejected(second, PG_CHECK_VIOLATION, 'categories_max_depth');
+        await two.query('rollback');
+      } finally {
+        one.release();
+        two.release();
+      }
+      const depth = await app.query(
+        `select count(*)::int as n from categories c
+           join categories p on p.id = c.parent_id
+          where p.parent_id is not null`,
+      );
+      expect(depth.rows[0].n).toBe(0);
+    });
     it('rejects a parent that does not exist', async () => {
       const error = await failure(
         insert('categories', {

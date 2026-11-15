@@ -9,7 +9,7 @@ import { and, eq } from 'drizzle-orm';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { AuditActor } from '../../db/audit.js';
-import { createDatabase, type Database } from '../../db/client.js';
+import { createDatabase, type Database, type Tx } from '../../db/client.js';
 import { auditLogs } from '../../db/schema/audit.js';
 import { mediaAssets } from '../../db/schema/media.js';
 import { products, productVariants } from '../../db/schema/products.js';
@@ -182,6 +182,51 @@ describeDb('catalog services', () => {
 
   const searchDocumentOf = async (productId: string) =>
     (await db().select().from(products).where(eq(products.id, productId)))[0]?.searchDocument ?? '';
+
+  /**
+   * Two staff members at the same time. `first` runs inside a transaction that stays open (its
+   * change is not committed), `second` starts meanwhile on its own connection and is given until it
+   * either finishes or is seen waiting for a lock. Then `first` commits and the outcome of `second`
+   * is returned. A service that does not lock correctly lets `second` finish at once, on a database
+   * that does not yet contain the change of `first`.
+   */
+  async function overlap(
+    first: (tx: Tx) => Promise<unknown>,
+    second: () => Promise<unknown>,
+  ): Promise<PromiseSettledResult<unknown>> {
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let changed: () => void = () => {};
+    const firstChanged = new Promise<void>((resolve) => {
+      changed = resolve;
+    });
+    const one = db().transaction(async (tx) => {
+      await first(tx);
+      changed();
+      await held;
+    });
+    one.catch(() => changed()); // a failure of `first` must not leave the test waiting
+    await firstChanged;
+
+    let settled = false;
+    const two = second().finally(() => {
+      settled = true;
+    });
+    const outcome = Promise.allSettled([two]).then(([result]) => result);
+
+    for (let tries = 0; tries < 100 && !settled; tries++) {
+      const { rows } = await raw.query('select 1 from pg_locks where not granted');
+      if (rows.length > 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    release();
+    await one;
+    const result = await outcome;
+    if (result === undefined) throw new Error('the second call never finished');
+    return result;
+  }
 
   // ----- brands, categories, notes, tags -----
   describe('brands', () => {
@@ -644,6 +689,67 @@ describeDb('catalog services', () => {
       const spare = await media('احتياطية');
       await setProductImages(db(), SYSTEM, product.id, [onlyImage, spare]);
       await setMediaAlt(db(), SYSTEM, onlyImage, { altAr: null });
+    });
+
+    // Write skew: two staff members change two different rows that together decide whether a
+    // published product still has a described image. Each of them sees the other's change as not
+    // committed yet, so without a lock both would pass.
+    it('two staff members clearing the alt text of two images at once cannot leave a published product without one', async () => {
+      const first = await media('الصورة الأولى');
+      const second = await media('الصورة الثانية');
+      const product = await buildProduct();
+      await setProductImages(db(), SYSTEM, product.id, [first, second]);
+      await publishProduct(db(), SYSTEM, product.id);
+
+      const outcome = await overlap(
+        (tx) => setMediaAlt(tx, SYSTEM, first, { altAr: null }),
+        () => setMediaAlt(db(), SYSTEM, second, { altAr: null }),
+      );
+      expect(outcome.status).toBe('rejected');
+      const error = (outcome as PromiseRejectedResult).reason as CatalogError;
+      expect(error).toBeInstanceOf(CatalogError);
+      expect(error.reason).toBe('would_unpublish');
+      expect(error.details.missing).toEqual(['image_with_alt']);
+
+      const detail = await getProductDetail(db(), product.id);
+      expect(detail.completion.canPublish).toBe(true);
+      expect(detail.images.filter((i) => i.media.altAr !== null)).toHaveLength(1);
+    });
+
+    it('dropping an image while another staff member clears the alt text of the one that stays is refused', async () => {
+      const kept = await media('الصورة المتبقية');
+      const dropped = await media('الصورة المحذوفة');
+      const product = await buildProduct();
+      await setProductImages(db(), SYSTEM, product.id, [kept, dropped]);
+      await publishProduct(db(), SYSTEM, product.id);
+
+      const outcome = await overlap(
+        (tx) => setProductImages(tx, SYSTEM, product.id, [kept]),
+        () => setMediaAlt(db(), SYSTEM, kept, { altAr: null }),
+      );
+      expect(outcome.status).toBe('rejected');
+      expect(((outcome as PromiseRejectedResult).reason as CatalogError).reason).toBe(
+        'would_unpublish',
+      );
+      expect((await getProductDetail(db(), product.id)).completion.canPublish).toBe(true);
+    });
+
+    it('the same two changes in the other order are also refused', async () => {
+      const kept = await media('الصورة المتبقية ٢');
+      const dropped = await media('الصورة المحذوفة ٢');
+      const product = await buildProduct();
+      await setProductImages(db(), SYSTEM, product.id, [kept, dropped]);
+      await publishProduct(db(), SYSTEM, product.id);
+
+      const outcome = await overlap(
+        (tx) => setMediaAlt(tx, SYSTEM, kept, { altAr: null }),
+        () => setProductImages(db(), SYSTEM, product.id, [kept]),
+      );
+      expect(outcome.status).toBe('rejected');
+      expect(((outcome as PromiseRejectedResult).reason as CatalogError).reason).toBe(
+        'would_unpublish',
+      );
+      expect((await getProductDetail(db(), product.id)).completion.canPublish).toBe(true);
     });
   });
 

@@ -32,7 +32,7 @@ import { assertProductsStayValid, getProductCompletion } from './completion.js';
 import { CatalogError, guarded } from './errors.js';
 import { refreshProductSearchDocuments } from './search-index.js';
 import { claimSlug, retireSlug } from './slugs.js';
-import { inTransaction } from './transaction.js';
+import { inTransaction, lockImageDescriptions } from './transaction.js';
 import { pickDefined } from './util.js';
 
 // ----- helpers -----
@@ -326,6 +326,7 @@ export function setMediaAlt(
 ): Promise<void> {
   return guarded(() =>
     inTransaction(executor, async (tx) => {
+      await lockImageDescriptions(tx);
       const [media] = await tx
         .select({ id: mediaAssets.id })
         .from(mediaAssets)

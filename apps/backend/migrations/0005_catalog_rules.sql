@@ -33,9 +33,10 @@ CREATE TRIGGER collections_set_updated_at BEFORE UPDATE ON collections
 --> statement-breakpoint
 
 -- Categories: a parent has no parent, and a category that has children cannot get a parent.
--- (Two administrators moving categories at the same instant could still build a third level; the
--- tree is tiny and edited by staff only, so this is accepted and the service re-reads inside its
--- transaction.)
+-- Two administrators changing the tree at the same instant would each pass the checks below (the
+-- other change is not committed yet) and could build a third level together, so every change that
+-- gives a category a parent first takes one lock for the whole tree, held until the transaction
+-- ends. The tree is tiny and edited by staff only, so queuing these changes costs nothing.
 CREATE FUNCTION categories_enforce_depth() RETURNS trigger AS $$
 DECLARE
   parent_has_parent boolean;
@@ -43,6 +44,7 @@ BEGIN
   IF NEW.parent_id IS NULL THEN
     RETURN NEW;
   END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('catalog.category_tree', 0));
   SELECT (parent_id IS NOT NULL) INTO parent_has_parent FROM categories WHERE id = NEW.parent_id;
   IF parent_has_parent THEN
     RAISE EXCEPTION 'category "%" cannot be placed under a sub-category: the tree is at most 2 levels deep', NEW.slug
