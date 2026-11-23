@@ -23,3 +23,9 @@ The brief forbids fake reviews, orders, customers, ratings, sales and scarcity i
 
 ## Revisit when
 New entity types are added: they must register their sample rows too.
+
+## Verification (STEP 3, 2026-11-10)
+- `seed:reference` now loads the catalog vocabulary (categories, families and their adjacency, note groups, starter notes with aliases, tags). It only inserts what is missing, by slug, so it never overwrites a Studio edit and never brings back a slug that was retired on purpose. The Arabic names are a first draft for the owner to review before launch.
+- `seed:dev` builds 5 invented brands and 20 products with placeholder images through the real services and media pipeline. No reviews, ratings, sales, "before" prices or scarcity.
+- **The "revisit when" is answered by construction:** `seed/tracking.ts` registers every new row in every table of the `public` schema, so a new entity type is covered without remembering. The test compares, for every table, the rows added with the rows registered, counting independently of the tracker.
+- `seed:dev` is safe to run twice (it does nothing when the first sample brand exists). Placeholder images are files, not rows; they live under `MEDIA_LOCAL_DIR` and are removed by deleting that folder.

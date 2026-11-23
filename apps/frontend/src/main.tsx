@@ -7,7 +7,9 @@ import { createRoutes } from './app/router';
 import './styles/fonts.css';
 import './styles/index.css';
 
-const router = createBrowserRouter(createRoutes());
+const router = createBrowserRouter(createRoutes(), {
+  basename: import.meta.env.BASE_URL,
+});
 
 const container = document.getElementById('root');
 if (container === null) throw new Error('The #root element is missing from index.html');

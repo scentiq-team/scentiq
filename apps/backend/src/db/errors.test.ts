@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { isCheckViolation, isStillReferenced, isUniqueViolation, pgErrorCode } from './errors.js';
+import {
+  isCheckViolation,
+  isStillReferenced,
+  isUniqueViolation,
+  pgConstraintName,
+  pgErrorCode,
+} from './errors.js';
 
 /** What Drizzle throws: its own error with the driver error under `cause`. */
 const wrapped = (code: string) =>
@@ -38,5 +44,29 @@ describe('classifiers', () => {
     expect(isStillReferenced(wrapped('23001'))).toBe(true);
     expect(isStillReferenced(wrapped('23503'))).toBe(true);
     expect(isStillReferenced(wrapped('23505'))).toBe(false);
+  });
+});
+
+describe('pgConstraintName', () => {
+  it('reads the constraint from a driver error and from Drizzle’s wrapper', () => {
+    expect(
+      pgConstraintName(Object.assign(new Error('x'), { constraint: 'products_slug_uq' })),
+    ).toBe('products_slug_uq');
+    expect(
+      pgConstraintName(
+        Object.assign(new Error('Failed query'), {
+          cause: Object.assign(new Error('driver'), { constraint: 'brands_slug_format' }),
+        }),
+      ),
+    ).toBe('brands_slug_format');
+  });
+
+  it('returns undefined when there is none, and does not loop on a circular chain', () => {
+    expect(pgConstraintName(new Error('plain'))).toBeUndefined();
+    expect(pgConstraintName(undefined)).toBeUndefined();
+    expect(pgConstraintName({ constraint: 42 })).toBeUndefined();
+    const a: { cause?: unknown } = {};
+    a.cause = a;
+    expect(pgConstraintName(a)).toBeUndefined();
   });
 });

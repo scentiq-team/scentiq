@@ -1,9 +1,38 @@
+import { readFileSync } from 'node:fs';
 import pg from 'pg';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createTestDatabase, describeDb, type TestDatabase } from '../test/database.js';
 import { runMigrations } from './migrate.js';
 
-const EXPECTED_MIGRATIONS = 4;
+// Every migration in the journal must be applied exactly once (read from the file, so adding a
+// migration never needs a number edited here).
+const journal = JSON.parse(
+  readFileSync(new URL('../../migrations/meta/_journal.json', import.meta.url), 'utf8'),
+) as { entries: unknown[] };
+const EXPECTED_MIGRATIONS = journal.entries.length;
+
+const EXPECTED_TABLES = [
+  'audit_logs',
+  'brands',
+  'categories',
+  'collection_products',
+  'collections',
+  'families',
+  'family_adjacency',
+  'media_assets',
+  'media_variants',
+  'note_aliases',
+  'note_groups',
+  'notes',
+  'product_images',
+  'product_notes',
+  'product_tags',
+  'product_variants',
+  'products',
+  'sample_data_registry',
+  'slug_redirects',
+  'tags',
+];
 
 async function scalar<T>(url: string, text: string): Promise<T> {
   const pool = new pg.Pool({ connectionString: url, max: 1 });
@@ -30,7 +59,7 @@ describeDb('migrations on an empty database', () => {
       database.ownerUrl,
       `select array_agg(tablename::text order by tablename) from pg_tables where schemaname = 'public'`,
     );
-    expect(tables).toEqual(['audit_logs', 'sample_data_registry']);
+    expect(tables).toEqual(EXPECTED_TABLES);
     const applied = await scalar<string>(
       database.ownerUrl,
       'select count(*) from drizzle.__drizzle_migrations',

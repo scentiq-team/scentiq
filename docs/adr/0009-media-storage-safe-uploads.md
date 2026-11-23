@@ -27,3 +27,11 @@ Product images drive conversion and Core Web Vitals, and uploads are a classic a
 
 ## Revisit when
 On-the-fly image transforms are needed, or R2 usage exceeds the free tier.
+
+## Verification (STEP 3, 2026-11-10)
+The library is built (`apps/backend/src/modules/media/`, no HTTP endpoint yet) and the open question in the decision is answered:
+- **HEIC is not supported.** On sharp 0.35.5 (libvips 8.18.7, libheif 1.23.5) a real HEVC HEIC file's metadata can be read, but its pixels cannot be decoded ("HEVC decoder not built in"); AVIF decodes. HEIC is detected from its `ftyp` brand and refused with its own reason (`heic_not_supported`), so the uploader is told to send JPEG. The test uses a real HEVC HEIC file kept in `src/test/fixtures/`.
+- **What is checked, in order:** size (10 MB), magic bytes (JPEG, PNG, WebP only), structure (a foreign format after the image end, animated PNG or WebP), header (at most 50 megapixels, at least 480 px wide, EXIF rotation taken into account), then decode and re-encode to WebP at 480, 960 and 1600 px (never enlarged). The uploaded bytes are never stored or served.
+- **Polyglots:** because every image is re-encoded, a hidden second format cannot survive; refusing files that carry another format's signature after the image end is a second layer. Trailing data without such a signature (a phone's "motion photo" block) is dropped by the re-encode, not rejected.
+- **Pixel limit is checked twice** (our header check and sharp's `limitInputPixels`); each alone stops a bomb, and the tests show that removing both lets one through.
+- **Known gap:** files can be left without database rows if the process dies between writing them and committing; the cleanup sweep belongs to the deployment phase.

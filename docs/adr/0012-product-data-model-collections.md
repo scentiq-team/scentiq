@@ -30,3 +30,11 @@ Notes, families and tags drive filters, search, recommendations and SEO landing 
 
 ## Revisit when
 A third language is added, or brand pages need per-brand layouts.
+
+## Verification (STEP 3, 2026-11-10)
+Built and tested against PostgreSQL 18 (`apps/backend/migrations/0004` and `0005`; rule list in `docs/database.md`).
+- **Categories:** the default proposal was kept (perfumes, oud and oud oil, bakhoor and home fragrance, gift sets, body and hair mists), depth at most 2, enforced by a trigger.
+- **Completion score and publish gate agree:** the score's required checks and the database gate demand the same things, in both directions (tested), and a published product can never lose a required piece (the service refuses the change).
+- **Collections:** rules are a strict whitelist validated by Zod and compiled to parameterized SQL; a value never reaches the SQL text, and a column or sort outside the whitelist cannot. A list holds at most 30 ids so a valid rule always fits the 8 192-byte limit. `manual` returns the pinned products; `dynamic` the matching ones; `hybrid` the pinned ones first, then the matching ones without the pinned and excluded, with `limit` counting matching products only. The in-stock-only rule is **not available yet**: it needs the stock ledger (Phase 6A), and the rule is rejected until then.
+- **Search document:** built by the one normalizer (ADR-0005) in the same transaction as every change to a product, and whenever a brand, category, note or tag it uses is changed (there is no family-editing service yet).
+- **Known limits:** two simultaneous creates of the same name can both pick the same slug; the second gets a clear conflict (staff-only, accepted). Two category edits at the same time cannot produce a third level: the depth trigger takes one advisory lock for the whole tree before it checks (found by the STEP 3 review, covered by a two-connection test). Two staff members clearing the alt text of two images of one published product at the same time are serialized by `lockImageDescriptions` for the same reason.

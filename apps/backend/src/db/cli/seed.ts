@@ -1,3 +1,4 @@
+import { LocalDiskStorage } from '../../modules/media/storage.js';
 import { createDatabase } from '../client.js';
 import { assertSeedAllowed, runSeeds, type SeedLevel } from '../seed/runner.js';
 import { seeders } from '../seed/seeders.js';
@@ -21,6 +22,7 @@ runTool(async () => {
       level: level as SeedLevel,
       appEnv: config.appEnv,
       seeders,
+      mediaStorage: new LocalDiskStorage(config.mediaLocalDir),
       log: console.log,
     });
     console.log(

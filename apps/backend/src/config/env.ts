@@ -71,6 +71,8 @@ const envSchema = z
       blankToUndefined,
       z.string().min(1).default('../frontend/dist'),
     ),
+    /** Where the local-disk media driver keeps image files (development and tests; ADR-0009). */
+    MEDIA_LOCAL_DIR: z.preprocess(blankToUndefined, z.string().min(1).default('.data/media')),
     DATABASE_URL: databaseUrlSchema,
     DATABASE_POOL_MAX: z.preprocess(
       blankToUndefined,
@@ -178,6 +180,8 @@ export interface AppConfig {
   siteOrigin: string;
   /** Absolute path of the built frontend. */
   frontendDistDir: string;
+  /** Absolute path of the folder the local-disk media driver writes to. */
+  mediaLocalDir: string;
   /** Application role (read and write rows only). Optional in development and test. */
   databaseUrl: string | undefined;
   databasePoolMax: number;
@@ -222,6 +226,7 @@ export function loadEnv(
     trustProxy: env.TRUST_PROXY,
     siteOrigin: env.SITE_ORIGIN ?? `http://localhost:${env.PORT}`,
     frontendDistDir: resolve(cwd, env.FRONTEND_DIST_DIR),
+    mediaLocalDir: resolve(cwd, env.MEDIA_LOCAL_DIR),
     databaseUrl: env.DATABASE_URL,
     databasePoolMax: env.DATABASE_POOL_MAX,
     migrationDatabaseUrl: env.MIGRATION_DATABASE_URL,
